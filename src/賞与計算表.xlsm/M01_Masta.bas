@@ -26,9 +26,6 @@ End Sub
 
 Sub Get_Masta()
 
-Const SQL1 = "SELECT 事業所区分, 社員コード, 社員名, 社員種類, 等級, 基本給１, 基本給２, 管理職手当, 家族手当, 部門1, 部門2, 部門3, 部門名, 入社年月日 FROM グループ社員マスター WHERE (((事業所区分)='"
-Const SQL2 = "'))"
-
 Dim cnA As New ADODB.Connection
 Dim rsA As New ADODB.Recordset
 Dim strKBN As String
@@ -39,22 +36,40 @@ Dim DateB  As Date
 Dim strYY  As String
 Dim lngMM  As Long
 
+    'ｼｰﾄ初期化
     Range("A4:J152").ClearContents
     Range("L4:L52").ClearContents
     Range("N4:N52").ClearContents
     
+    '拠点区分判定して接続DB切替え
     strKBN = Range("Q2")
     If strKBN = "" Then GoTo Exit_DB
     If strKBN = "TA" Or strKBN = "KA" Then
-        strDB = dbT
+        strDB = dbT  '\\192.168.128.4\hb\ta\給与システム\グループ賃金.accdb
     Else
-        strDB = dbM
+        strDB = dbM  '\\192.168.128.4\hb\kyuyo\グループ賃金.accdb
     End If
     cnA.ConnectionString = "Provider=Microsoft.ACE.OLEDB.12.0; Data Source=" & strDB
     cnA.Open
     
     '事業所区分ごと読込み
-    strSQL = SQL1 & strKBN & SQL2
+    strSQL = ""
+    strSQL = strSQL & "SELECT 事業所区分,"
+    strSQL = strSQL & "       社員コード,"
+    strSQL = strSQL & "       社員名,"
+    strSQL = strSQL & "       社員種類,"
+    strSQL = strSQL & "       等級,"
+    strSQL = strSQL & "       基本給１,"
+    strSQL = strSQL & "       基本給２,"
+    strSQL = strSQL & "       管理職手当,"
+    strSQL = strSQL & "       家族手当,"
+    strSQL = strSQL & "       部門1,"
+    strSQL = strSQL & "       部門2,"
+    strSQL = strSQL & "       部門3,"
+    strSQL = strSQL & "       部門名,"
+    strSQL = strSQL & "       入社年月日"
+    strSQL = strSQL & "     FROM グループ社員マスター"
+    strSQL = strSQL & "          WHERE 事業所区分 = '" & strKBN & "'"
     rsA.Open strSQL, cnA, adOpenStatic, adLockReadOnly
     If rsA.EOF = False Then rsA.MoveFirst
     lngR = 4
@@ -93,19 +108,19 @@ Dim lngMM  As Long
     Loop
     
 Exit_DB:
-    rsA.Close
-    cnA.Close
 
-    Set rsA = Nothing
-    Set cnA = Nothing
+    If Not rsA Is Nothing Then
+        If rsA.State = adStateOpen Then rsA.Close
+        Set rsA = Nothing
+    End If
+    If Not cnA Is Nothing Then
+        If cnA.State = adStateOpen Then cnA.Close
+        Set cnA = Nothing
+    End If
 
 End Sub
 
 Sub Up_Masta()
-
-Const SQL1 = "SELECT 部門1, 部門2, 部門3, 部門名, 新入社員 FROM グループ社員マスター WHERE (((社員コード)='"
-Const SQL2 = "'))"
-
 
 Dim cnA As New ADODB.Connection
 Dim rsA As New ADODB.Recordset
@@ -117,16 +132,17 @@ Dim strKB3 As String
 Dim lngR   As Long
 Dim lngC   As Long
     
+    '拠点区分判定して接続DB切替え
     strKBN = Range("Q2")
     If strKBN = "" Then GoTo Exit_DB
     If strKBN = "TA" Or strKBN = "KA" Then
-        strDB = dbT
+        strDB = dbT  '\\192.168.128.4\hb\ta\給与システム\グループ賃金.accdb
     Else
-        strDB = dbM
+        strDB = dbM  '\\192.168.128.4\hb\kyuyo\グループ賃金.accdb
     End If
     cnA.ConnectionString = "Provider=Microsoft.ACE.OLEDB.12.0; Data Source=" & strDB
     cnA.Open
-
+    
     lngR = 4
     Do
         strCD = Cells(lngR, 2) '社員ｺｰﾄﾞ
@@ -136,7 +152,14 @@ Dim lngC   As Long
         strKB3 = Cells(lngR, 12)
         If strCD <> "" Then
             'ﾏｽﾀ呼出
-            strSQL = SQL1 & strCD & SQL2
+            strSQL = ""
+            strSQL = strSQL & "SELECT 部門1,"
+            strSQL = strSQL & "       部門2,"
+            strSQL = strSQL & "       部門3,"
+            strSQL = strSQL & "       部門名,"
+            strSQL = strSQL & "       新入社員"
+            strSQL = strSQL & "     FROM グループ社員マスター"
+            strSQL = strSQL & "          WHERE 社員コード = '" & strCD & "'"
             rsA.Open strSQL, cnA, adOpenStatic, adLockPessimistic
             If rsA.EOF = False Then
                 rsA.MoveFirst
@@ -157,13 +180,16 @@ Dim lngC   As Long
     Loop
     
     MsgBox "登録しました(^^♪", vbInformation, "マスタ登録"
+    
 Exit_DB:
 
-    '接続のクローズ
-    cnA.Close
-
-    'オブジェクトの破棄
-    Set rsA = Nothing
-    Set cnA = Nothing
+    If Not rsA Is Nothing Then
+        If rsA.State = adStateOpen Then rsA.Close
+        Set rsA = Nothing
+    End If
+    If Not cnA Is Nothing Then
+        If cnA.State = adStateOpen Then cnA.Close
+        Set cnA = Nothing
+    End If
 
 End Sub
