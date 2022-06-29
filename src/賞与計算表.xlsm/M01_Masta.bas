@@ -1,6 +1,13 @@
 Attribute VB_Name = "M01_Masta"
 Option Explicit
 
+Public Const MYPROVIDERE = "Provider=SQLOLEDB;"
+Public Const MYSERVER9 = "Data Source=192.168.128.9\SQLEXPRESS;"
+Public Const MYSERVER = "Data Source=HB14\SQLEXPRESS;"
+Public Const USER = "User ID=sa;"
+Public Const PSWD9 = "Password=ALCadmin!;"
+Public Const PSWD = "Password=admin;"
+
 Public Const dbM As String = "\\192.168.128.4\hb\kyuyo\グループ賃金.accdb"
 Public Const dbT As String = "\\192.168.128.4\hb\ta\給与システム\グループ賃金.accdb"
 Public Const dbS As String = "\\192.168.128.4\hb\kyuyo\賞与\賞与データ.accdb"
@@ -24,10 +31,15 @@ Dim Index  As Long
     
 End Sub
 
+'============================
+'給与マスタの賞与区分変更画面
+'============================
+
 Sub Get_Masta()
 
-Dim cnA As New ADODB.Connection
-Dim rsA As New ADODB.Recordset
+Dim cnA    As New ADODB.Connection
+Dim rsA    As New ADODB.Recordset
+Dim Cmd    As New ADODB.Command
 Dim strKBN As String
 Dim lngR   As Long
 Dim lngC   As Long
@@ -40,37 +52,35 @@ Dim lngMM  As Long
     Range("A4:J152").ClearContents
     Range("L4:L52").ClearContents
     Range("N4:N52").ClearContents
-    
-    '拠点区分判定して接続DB切替え
-    strKBN = Range("Q2")
-    If strKBN = "" Then GoTo Exit_DB
-    If strKBN = "TA" Or strKBN = "KA" Then
-        strDB = dbT  '\\192.168.128.4\hb\ta\給与システム\グループ賃金.accdb
-    Else
-        strDB = dbM  '\\192.168.128.4\hb\kyuyo\グループ賃金.accdb
-    End If
-    cnA.ConnectionString = "Provider=Microsoft.ACE.OLEDB.12.0; Data Source=" & strDB
+        
+    strDB = "Initial Catalog=KYUYO;"
+    cnA.ConnectionString = MYPROVIDERE & MYSERVER & strDB & USER & PSWD 'SQLServer
     cnA.Open
+    Set Cmd.ActiveConnection = cnA
     
     '事業所区分ごと読込み
+    strKBN = Range("Q2")
     strSQL = ""
-    strSQL = strSQL & "SELECT 事業所区分,"
-    strSQL = strSQL & "       社員コード,"
-    strSQL = strSQL & "       社員名,"
-    strSQL = strSQL & "       社員種類,"
-    strSQL = strSQL & "       等級,"
-    strSQL = strSQL & "       基本給１,"
-    strSQL = strSQL & "       基本給２,"
-    strSQL = strSQL & "       管理職手当,"
-    strSQL = strSQL & "       家族手当,"
-    strSQL = strSQL & "       部門1,"
-    strSQL = strSQL & "       部門2,"
-    strSQL = strSQL & "       部門3,"
-    strSQL = strSQL & "       部門名,"
-    strSQL = strSQL & "       入社年月日"
-    strSQL = strSQL & "     FROM グループ社員マスター"
-    strSQL = strSQL & "          WHERE 事業所区分 = '" & strKBN & "'"
-    rsA.Open strSQL, cnA, adOpenStatic, adLockReadOnly
+    strSQL = strSQL & "SELECT SKBN"
+    strSQL = strSQL & "       ,SCODE"
+    strSQL = strSQL & "       ,SNAME"
+    strSQL = strSQL & "       ,SKBN"
+    strSQL = strSQL & "       ,CLASS"
+    strSQL = strSQL & "       ,PAY1"
+    strSQL = strSQL & "       ,PAY2"
+    strSQL = strSQL & "       ,OPT1"  '管理職手当
+    strSQL = strSQL & "       ,OPT2"  '家族手当
+    strSQL = strSQL & "       ,BMN1"
+    strSQL = strSQL & "       ,BMN2"
+    strSQL = strSQL & "       ,BMN3"
+    strSQL = strSQL & "       ,BMNNM"
+    strSQL = strSQL & "       ,DATE2" '入社年月日
+    strSQL = strSQL & "     FROM KYUMTA"
+    strSQL = strSQL & "        WHERE KBN ='" & strKBN & "'"
+    strSQL = strSQL & "        AND DATKB ='1'"
+    strSQL = strSQL & "     ORDER BY SCODE"
+    Cmd.CommandText = strSQL
+    Set rsA = Cmd.Execute
     If rsA.EOF = False Then rsA.MoveFirst
     lngR = 4
     Do Until rsA.EOF
@@ -79,13 +89,12 @@ Dim lngMM  As Long
             Cells(lngR, lngC + 1) = rsA.Fields(lngC)
         Next lngC
         '部門区分ｾｯﾄ
-        If IsNull(rsA.Fields("部門2")) = False Then Cells(lngR, 10) = rsA.Fields("部門2")
-        If IsNull(rsA.Fields("部門3")) = False Then Cells(lngR, 12) = rsA.Fields("部門3")
-        '生年月日
-        If rsA.Fields("入社年月日") <> "" Then
-            DateA = rsA.Fields("入社年月日")
-        End If
+        If IsNull(rsA.Fields("BMN2")) = False Then Cells(lngR, 10) = rsA.Fields("BMN2")
+        If IsNull(rsA.Fields("BMN3")) = False Then Cells(lngR, 12) = rsA.Fields("BMN3")
         '新入社員判定処理
+        If rsA.Fields("DATE2") <> "" Then
+            DateA = rsA.Fields("DATE2")
+        End If
         strYY = Format(Now(), "yyyy")
         lngMM = Format(Now(), "m")
         If lngMM >= 4 And lngMM <= 7 Then
@@ -124,6 +133,7 @@ Sub Up_Masta()
 
 Dim cnA As New ADODB.Connection
 Dim rsA As New ADODB.Recordset
+Dim Cmd    As New ADODB.Command
 Dim strKBN As String
 Dim strCD  As String
 Dim strKB1 As String
@@ -132,17 +142,12 @@ Dim strKB3 As String
 Dim lngR   As Long
 Dim lngC   As Long
     
-    '拠点区分判定して接続DB切替え
-    strKBN = Range("Q2")
-    If strKBN = "" Then GoTo Exit_DB
-    If strKBN = "TA" Or strKBN = "KA" Then
-        strDB = dbT  '\\192.168.128.4\hb\ta\給与システム\グループ賃金.accdb
-    Else
-        strDB = dbM  '\\192.168.128.4\hb\kyuyo\グループ賃金.accdb
-    End If
-    cnA.ConnectionString = "Provider=Microsoft.ACE.OLEDB.12.0; Data Source=" & strDB
+    strDB = "Initial Catalog=KYUYO;"
+    cnA.ConnectionString = MYPROVIDERE & MYSERVER & strDB & USER & PSWD 'SQLServer
     cnA.Open
+    Set Cmd.ActiveConnection = cnA
     
+    strKBN = Range("Q2")
     lngR = 4
     Do
         strCD = Cells(lngR, 2) '社員ｺｰﾄﾞ
@@ -151,24 +156,23 @@ Dim lngC   As Long
         strKB2 = Cells(lngR, 10)
         strKB3 = Cells(lngR, 12)
         If strCD <> "" Then
-            'ﾏｽﾀ呼出
             strSQL = ""
-            strSQL = strSQL & "SELECT 部門1,"
-            strSQL = strSQL & "       部門2,"
-            strSQL = strSQL & "       部門3,"
-            strSQL = strSQL & "       部門名,"
-            strSQL = strSQL & "       新入社員"
-            strSQL = strSQL & "     FROM グループ社員マスター"
-            strSQL = strSQL & "          WHERE 社員コード = '" & strCD & "'"
+            strSQL = strSQL & "SELECT BMN1"
+            strSQL = strSQL & "       ,BMN2"
+            strSQL = strSQL & "       ,BMN3"
+            strSQL = strSQL & "       ,BMNNM"
+            strSQL = strSQL & "       ,YKBN"
+            strSQL = strSQL & "     FROM KYUMTA"
+            strSQL = strSQL & "        WHERE SCODE = '" & strCD & "'"
             rsA.Open strSQL, cnA, adOpenStatic, adLockPessimistic
             If rsA.EOF = False Then
                 rsA.MoveFirst
-                rsA.Fields(0) = strKB1
-                rsA.Fields(1) = strKB2
-                rsA.Fields(2) = strKB3
-                rsA.Fields(3) = Cells(lngR, 13)
+                rsA.Fields(0) = strKB1 '拠点区分
+                rsA.Fields(1) = strKB2 '賞与区分
+                rsA.Fields(2) = strKB3 '部署区分
+                rsA.Fields(3) = Cells(lngR, 13) '部署名
                 If Cells(lngR, 14) = "○" Then
-                    rsA.Fields(4) = "Y"
+                    rsA.Fields(4) = "Y" '新入社員区分
                 Else
                     rsA.Fields(4) = ""
                 End If

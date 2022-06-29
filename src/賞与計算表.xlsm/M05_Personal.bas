@@ -2,6 +2,7 @@ Attribute VB_Name = "M05_Personal"
 Option Explicit
 
 Sub ŒÂ•Êˆóü()
+
 Dim strName   As String
 Dim lngR      As Long
 Dim strKYU    As String
@@ -70,12 +71,8 @@ Dim vMSG      As Variant
             Cells(19, 3) = lngKIN(6)
             Cells(20, 3) = dblRT(3)
             
-'            vMSG = MsgBox("ˆóü‚µ‚Ü‚·‚©H " & strName, vbYesNoCancel, "ˆóü‘I‘ğ")
-'            If vMSG = vbCancel Then Exit Do
-'            If vMSG = vbYes Then
             ActiveWindow.SelectedSheets.PrintOut Copies:=1, Collate:=True
             ActiveSheet.DisplayPageBreaks = False
-'            End If
         End If
         
         lngR = lngR + 1
@@ -134,11 +131,6 @@ Dim strPP     As String
         Sheets("PDR").Select
         Cells(2, 1) = strName & "  “a"
         Cells(16, 3) = lngKIN(4)
-'        If strPP = "P" Then
-'            Cells(15, 2) = ""
-'        Else
-'            Cells(15, 2) = "*‹‹—^ˆêƒ•Œ‘Š“–"
-'        End If
         ActiveWindow.SelectedSheets.PrintOut Copies:=1, Collate:=True
         ActiveSheet.DisplayPageBreaks = False
         

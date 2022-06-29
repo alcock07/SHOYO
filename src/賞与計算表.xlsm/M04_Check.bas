@@ -8,10 +8,10 @@ Private strDAT    As String  '今回支給年月
 Private strDAZ    As String  '前回支給年月
 Private strDAL    As String  '前年支給年月
 
-Const SQL1 = "SELECT * FROM 賞与 WHERE (((支給年月) = '"
-Const SQL2 = "') AND ((部門1)='"
-Const SQL3 = "') And ((社員コード) = '"
-Const SQL4 = "')) ORDER BY 等級 DESC, 社員コード"
+'Const SQL1 = "SELECT * FROM 賞与 WHERE (((支給年月) = '"
+'Const SQL2 = "') AND ((部門1)='"
+'Const SQL3 = "') And ((社員コード) = '"
+'Const SQL4 = "')) ORDER BY 等級 DESC, 社員コード"
 
 Sub Proc_Check()
 
@@ -45,7 +45,14 @@ Dim lngR    As Long   '列ｶｳﾝﾀ
     If strKBN = "" Then GoTo Exit_DB
     cnA.ConnectionString = "Provider=Microsoft.ACE.OLEDB.12.0; Data Source=" & dbS
     cnA.Open
-    strSQL = SQL1 & strDAT & SQL2 & strKBN & SQL4
+'    strSQL = SQL1 & strDAT & SQL2 & strKBN & SQL4
+    strSQL = ""
+    strSQL = strSQL & "SELECT *"
+    strSQL = strSQL & "       FROM 賞与"
+    strSQL = strSQL & "            WHERE 支給年月 = '" & strDAT & "'"
+    strSQL = strSQL & "            AND 部門1 = '" & strKBN & "'"
+    strSQL = strSQL & "       ORDER BY 等級 DESC"
+    strSQL = strSQL & "                ,社員コード"
     rsA.Open strSQL, cnA, adOpenStatic, adLockReadOnly
     If rsA.EOF = False Then rsA.MoveFirst
     lngR = 5
@@ -63,7 +70,15 @@ Dim lngR    As Long   '列ｶｳﾝﾀ
     lngR = 5
     Do
         If Cells(lngR, 2) = "" Then Exit Do
-        strSQL = SQL1 & strDAZ & SQL2 & strKBN & SQL3 & Cells(lngR, 2) & SQL4
+'        strSQL = SQL1 & strDAZ & SQL2 & strKBN & SQL3 & Cells(lngR, 2) & SQL4
+        strSQL = ""
+        strSQL = strSQL & "SELECT *"
+        strSQL = strSQL & "       FROM 賞与"
+        strSQL = strSQL & "            WHERE 支給年月 = '" & strDAZ & "'"
+        strSQL = strSQL & "            AND 部門1 = '" & strKBN & "'"
+        strSQL = strSQL & "            AND 社員コード = '" & Cells(lngR, 2) & "'"
+        strSQL = strSQL & "       ORDER BY 等級 DESC"
+        strSQL = strSQL & "              , 社員コード"
         rsA.Open strSQL, cnA, adOpenStatic, adLockReadOnly
         If rsA.EOF = False Then
             rsA.MoveFirst
@@ -78,7 +93,15 @@ Dim lngR    As Long   '列ｶｳﾝﾀ
     lngR = 5
     Do
         If Cells(lngR, 2) = "" Then Exit Do
-        strSQL = SQL1 & strDAL & SQL2 & strKBN & SQL3 & Cells(lngR, 2) & SQL4
+'        strSQL = SQL1 & strDAL & SQL2 & strKBN & SQL3 & Cells(lngR, 2) & SQL4
+        strSQL = ""
+        strSQL = strSQL & "SELECT *"
+        strSQL = strSQL & "       FROM 賞与"
+        strSQL = strSQL & "            WHERE 支給年月 = '" & strDAL & "'"
+        strSQL = strSQL & "            AND 部門1 = '" & strKBN & "'"
+        strSQL = strSQL & "            AND 社員コード = '" & Cells(lngR, 2) & "'"
+        strSQL = strSQL & "       ORDER BY 等級 DESC"
+        strSQL = strSQL & "              , 社員コード"
         rsA.Open strSQL, cnA, adOpenStatic, adLockReadOnly
         If rsA.EOF = False Then
             rsA.MoveFirst
@@ -91,9 +114,14 @@ Dim lngR    As Long   '列ｶｳﾝﾀ
     Loop
     
 Exit_DB:
-    cnA.Close
 
-    Set rsA = Nothing
-    Set cnA = Nothing
+    If Not rsA Is Nothing Then
+        If rsA.State = adStateOpen Then rsA.Close
+        Set rsA = Nothing
+    End If
+    If Not cnA Is Nothing Then
+        If cnA.State = adStateOpen Then cnA.Close
+        Set cnA = Nothing
+    End If
 
 End Sub

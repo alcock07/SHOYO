@@ -3,43 +3,33 @@ Option Explicit
 
 Private cnA As New ADODB.Connection
 Private rsA As New ADODB.Recordset
+Private Cmd As New ADODB.Command
 Private lngR   As Long    '行ｶｳﾝﾀ
 Private dblR   As Double  '基本支給率
 Dim lngKIN(5)  As Long    '合計
 
-Const SQL1 = "SELECT  社員コード, 社員名, 等級, 基本給１, 基本給２, 管理職手当, 家族手当, 部門2, 部門3, 部門名, 社員種類, 新入社員 " & _
-             "FROM グループ社員マスター WHERE (((事業所区分) = '"
-Const SQL2 = "') And ((部門2) = '"
-Const SQL3 = "') And ((社員種類)='"
-Const SQL3Y = "' Or (社員種類)='"
-Const SQL4 = "')) ORDER BY 部門3, 等級 DESC, 社員コード"
-Const SQL5 = "') And ((新入社員)<>'Y')) ORDER BY 等級 DESC, 社員コード"
-Const SQL6 = "') And ((新入社員)='Y')) ORDER BY 社員コード"
-
 Sub BMN_SET()
 '===============================
-' ｺﾝﾎﾞﾎﾞｯｸｽ部門区分選択時ﾓｼﾞｭｰﾙ
+' ｺﾝﾎﾞﾎﾞｯｸｽ支店区分選択時ﾓｼﾞｭｰﾙ
+' ｺﾝﾎﾞﾎﾞｯｸｽ部門区分の選択肢ｾｯﾄ
 '===============================
-Dim strKBN    As String
+Dim strKBN As String  '事業所区分
 
     Range("AH2:AI22").ClearContents
     
-    '拠点区分判定して接続DB切替え
-    strKBN = Range("AE1")
-    If strKBN = "TA" Or strKBN = "KA" Then
-        strDB = dbT
-    Else
-        strDB = dbM
-    End If
-    cnA.ConnectionString = "Provider=Microsoft.ACE.OLEDB.12.0; Data Source=" & strDB
+    strDB = "Initial Catalog=KYUYO;"
+    cnA.ConnectionString = MYPROVIDERE & MYSERVER & strDB & USER & PSWD 'SQLServer
     cnA.Open
+    Set Cmd.ActiveConnection = cnA
     
+    strKBN = Range("AE1")
     strSQL = ""
-    strSQL = strSQL & "SELECT 所属事業所"
-    strSQL = strSQL & "     FROM グループ社員マスター"
-    strSQL = strSQL & "        WHERE 事業所区分 = '" & strKBN & "'"
-    strSQL = strSQL & "     GROUP BY 所属事業所"
-    rsA.Open strSQL, cnA, adOpenStatic, adLockReadOnly
+    strSQL = strSQL & "SELECT OFFICE"
+    strSQL = strSQL & "     FROM KYUMTA"
+    strSQL = strSQL & "        WHERE KBN = '" & strKBN & "'"
+    strSQL = strSQL & "     GROUP BY OFFICE"
+    Cmd.CommandText = strSQL
+    Set rsA = Cmd.Execute
     
     If rsA.EOF = False Then rsA.MoveFirst
     lngR = 1
@@ -92,13 +82,13 @@ Sub Get_First()
 '=================
 'データ作成ボタン
 '=================
-Dim strKBN    As String
-Dim strBMN    As String
-Dim strNXT    As String
-Dim strDAT    As String
-Dim DateA     As Date
-Dim lngC      As Long    '列ｶｳﾝﾀ
-Dim lngP      As Long    '位置記憶
+Dim strKBN  As String
+Dim strBMN  As String
+Dim strNXT  As String
+Dim strDAT  As String
+Dim DateA   As Date
+Dim lngC    As Long    '列ｶｳﾝﾀ
+Dim lngP    As Long    '位置記憶
 
     'ｼｰﾄｸﾘｱ
     With Range("A7:U100")
@@ -152,50 +142,49 @@ Dim lngP      As Long    '位置記憶
     End If
     '支店
     strKBN = Range("AE1")
-    strDB = dbM
     If Left(strKBN, 1) = "R" Then
         Range("A4") = "鳥居金属興業株式会社 （" & Range("AF1") & "）"
     ElseIf strKBN = "KA" Then
         Range("A4") = "関東アルコック工業株式会社"
-        strDB = dbT
     ElseIf strKBN = "TA" Then
         Range("A4") = "東海アルコック工業株式会社"
-        strDB = dbT
     End If
     
     MsgBox "新社員判定を更新するので" & vbCrLf & "部署登録画面で読込み・登録作業をして下さい", vbInformation, "警告"
     
-    cnA.ConnectionString = "Provider=Microsoft.ACE.OLEDB.12.0; Data Source=" & strDB
+    strDB = "Initial Catalog=KYUYO;"
+    cnA.ConnectionString = MYPROVIDERE & MYSERVER & strDB & USER & PSWD 'SQLServer
     cnA.Open
-    lngR = 8
+    Set Cmd.ActiveConnection = cnA
     
-    '営業部門処理 ===============================================
+    '初期化
+    lngR = 8
     Erase lngKIN
-    '基本率
     lngP = Range("AD1")
     dblR = Sheets("Main").Cells(7, lngP + 3)
-        
-    strSQL = ""
-    strSQL = strSQL & "SELECT  社員コード,"
-    strSQL = strSQL & "        社員名,"
-    strSQL = strSQL & "        等級,"
-    strSQL = strSQL & "        基本給１,"
-    strSQL = strSQL & "        基本給２,"
-    strSQL = strSQL & "        管理職手当,"
-    strSQL = strSQL & "        家族手当,"
-    strSQL = strSQL & "        部門2,"
-    strSQL = strSQL & "        部門3,"
-    strSQL = strSQL & "        部門名,"
-    strSQL = strSQL & "        社員種類,"
-    strSQL = strSQL & "        新入社員"
-    strSQL = strSQL & "     FROM グループ社員マスター"
-    strSQL = strSQL & "          WHERE 事業所区分 = '" & strKBN & "'"
-    strSQL = strSQL & "          And 部門2 = '01'"
-    strSQL = strSQL & "     ORDER BY 部門3,"
-    strSQL = strSQL & "              等級 DESC,"
-    strSQL = strSQL & "              社員コード"
-    rsA.Open strSQL, cnA, adOpenStatic, adLockReadOnly
     
+    '営業部門処理 ===============================================
+    strSQL = ""
+    strSQL = strSQL & "SELECT  SCODE"
+    strSQL = strSQL & "        ,SNAME"
+    strSQL = strSQL & "        ,CLASS"
+    strSQL = strSQL & "        ,PAY1"
+    strSQL = strSQL & "        ,PAY2"
+    strSQL = strSQL & "        ,OPT1"
+    strSQL = strSQL & "        ,OPT2"
+    strSQL = strSQL & "        ,BMN2"
+    strSQL = strSQL & "        ,BMN3"
+    strSQL = strSQL & "        ,BMNNM"
+    strSQL = strSQL & "        ,SKBN"
+    strSQL = strSQL & "        ,YKBN"
+    strSQL = strSQL & "    FROM KYUMTA"
+    strSQL = strSQL & "         WHERE KBN = '" & strKBN & "'"
+    strSQL = strSQL & "           And BMN2 = '01'"
+    strSQL = strSQL & "    ORDER BY BMN3"
+    strSQL = strSQL & "             ,CLASS DESC"
+    strSQL = strSQL & "             ,SCODE"
+    Cmd.CommandText = strSQL
+    Set rsA = Cmd.Execute
     If rsA.EOF = False Then rsA.MoveFirst
     'ﾀｲﾄﾙ
     Cells(lngR, 1) = "（営業部門）"
@@ -203,11 +192,11 @@ Dim lngP      As Long    '位置記憶
     Cells(lngR, 6) = "基本(" & dblR & ")"
     lngR = lngR + 1
     Do Until rsA.EOF
-        If strNXT <> rsA.Fields("部門3") Then
+        If strNXT <> rsA.Fields("BMN3") Then
             lngR = lngR + 1
-            Cells(lngR, 1) = "（" & rsA.Fields("部門名") & "）"
+            Cells(lngR, 1) = "（" & Trim(rsA.Fields("BMNNM")) & "）"
             lngR = lngR + 1
-            strNXT = rsA.Fields("部門3")
+            strNXT = rsA.Fields("BMN3")
         End If
         Call 明細書込みF
     Loop
@@ -232,25 +221,26 @@ Dim lngP      As Long    '位置記憶
     Erase lngKIN
     dblR = Sheets("Main").Cells(8, lngP + 3)
     strSQL = ""
-    strSQL = strSQL & "SELECT  社員コード,"
-    strSQL = strSQL & "        社員名,"
-    strSQL = strSQL & "        等級,"
-    strSQL = strSQL & "        基本給１,"
-    strSQL = strSQL & "        基本給２,"
-    strSQL = strSQL & "        管理職手当,"
-    strSQL = strSQL & "        家族手当,"
-    strSQL = strSQL & "        部門2,"
-    strSQL = strSQL & "        部門3,"
-    strSQL = strSQL & "        部門名,"
-    strSQL = strSQL & "        社員種類,"
-    strSQL = strSQL & "        新入社員"
-    strSQL = strSQL & "     FROM グループ社員マスター"
-    strSQL = strSQL & "          WHERE 事業所区分 = '" & strKBN & "'"
-    strSQL = strSQL & "          And 部門2 = '02'"
-    strSQL = strSQL & "          And 新入社員 <> 'Y'"
-    strSQL = strSQL & "     ORDER BY 等級 DESC,"
-    strSQL = strSQL & "              社員コード"
-    rsA.Open strSQL, cnA, adOpenStatic, adLockReadOnly
+    strSQL = strSQL & "SELECT  SCODE"
+    strSQL = strSQL & "        ,SNAME"
+    strSQL = strSQL & "        ,CLASS"
+    strSQL = strSQL & "        ,PAY1"
+    strSQL = strSQL & "        ,PAY2"
+    strSQL = strSQL & "        ,OPT1"
+    strSQL = strSQL & "        ,OPT2"
+    strSQL = strSQL & "        ,BMN2"
+    strSQL = strSQL & "        ,BMN3"
+    strSQL = strSQL & "        ,BMNNM"
+    strSQL = strSQL & "        ,SKBN"
+    strSQL = strSQL & "        ,YKBN"
+    strSQL = strSQL & "    FROM KYUMTA"
+    strSQL = strSQL & "         WHERE KBN = '" & strKBN & "'"
+    strSQL = strSQL & "          And BMN2 = '02'"
+    strSQL = strSQL & "          And YKBN <> 'Y'"
+    strSQL = strSQL & "    ORDER BY CLASS DESC"
+    strSQL = strSQL & "              ,SCODE"
+    Cmd.CommandText = strSQL
+    Set rsA = Cmd.Execute
     If rsA.EOF = False Then
     rsA.MoveFirst
     'ﾀｲﾄﾙ
@@ -279,25 +269,26 @@ Dim lngP      As Long    '位置記憶
     Erase lngKIN
     dblR = Sheets("Main").Cells(9, lngP + 3)
     strSQL = ""
-    strSQL = strSQL & "SELECT  社員コード,"
-    strSQL = strSQL & "        社員名,"
-    strSQL = strSQL & "        等級,"
-    strSQL = strSQL & "        基本給１,"
-    strSQL = strSQL & "        基本給２,"
-    strSQL = strSQL & "        管理職手当,"
-    strSQL = strSQL & "        家族手当,"
-    strSQL = strSQL & "        部門2,"
-    strSQL = strSQL & "        部門3,"
-    strSQL = strSQL & "        部門名,"
-    strSQL = strSQL & "        社員種類,"
-    strSQL = strSQL & "        新入社員"
-    strSQL = strSQL & "     FROM グループ社員マスター"
-    strSQL = strSQL & "          WHERE 事業所区分 = '" & strKBN & "'"
-    strSQL = strSQL & "          And 部門2 = '03'"
-    strSQL = strSQL & "          And 新入社員 <> 'Y'"
-    strSQL = strSQL & "     ORDER BY 等級 DESC,"
-    strSQL = strSQL & "              社員コード"
-    rsA.Open strSQL, cnA, adOpenStatic, adLockReadOnly
+    strSQL = strSQL & "SELECT  SCODE"
+    strSQL = strSQL & "        ,SNAME"
+    strSQL = strSQL & "        ,CLASS"
+    strSQL = strSQL & "        ,PAY1"
+    strSQL = strSQL & "        ,PAY2"
+    strSQL = strSQL & "        ,OPT1"
+    strSQL = strSQL & "        ,OPT2"
+    strSQL = strSQL & "        ,BMN2"
+    strSQL = strSQL & "        ,BMN3"
+    strSQL = strSQL & "        ,BMNNM"
+    strSQL = strSQL & "        ,SKBN"
+    strSQL = strSQL & "        ,YKBN"
+    strSQL = strSQL & "    FROM KYUMTA"
+    strSQL = strSQL & "         WHERE KBN = '" & strKBN & "'"
+    strSQL = strSQL & "          And BMN2 = '02'"
+    strSQL = strSQL & "          And YKBN <> 'Y'"
+    strSQL = strSQL & "    ORDER BY CLASS DESC"
+    strSQL = strSQL & "              ,SCODE"
+    Cmd.CommandText = strSQL
+    Set rsA = Cmd.Execute
     If rsA.EOF = False Then
     rsA.MoveFirst
     'ﾀｲﾄﾙ
@@ -335,66 +326,39 @@ Dim lngP      As Long    '位置記憶
     Cells(lngR, 6) = "基本(" & dblR & ")"
     'ﾃﾞｰﾀ読込み
     strSQL = ""
-    strSQL = strSQL & "SELECT  社員コード,"
-    strSQL = strSQL & "        社員名,"
-    strSQL = strSQL & "        等級,"
-    strSQL = strSQL & "        基本給１,"
-    strSQL = strSQL & "        基本給２,"
-    strSQL = strSQL & "        管理職手当,"
-    strSQL = strSQL & "        家族手当,"
-    strSQL = strSQL & "        部門2,"
-    strSQL = strSQL & "        部門3,"
-    strSQL = strSQL & "        部門名,"
-    strSQL = strSQL & "        社員種類,"
-    strSQL = strSQL & "        新入社員"
-    strSQL = strSQL & "     FROM グループ社員マスター"
-    strSQL = strSQL & "          WHERE 事業所区分 = '" & strKBN & "'"
-    strSQL = strSQL & "          And 部門2 = '04'"
-    strSQL = strSQL & "          And (社員種類 ='A' Or 社員種類 ='B')"
-    strSQL = strSQL & "          And 新入社員 <> 'Y'"
-    strSQL = strSQL & "     ORDER BY 等級 DESC,"
-    strSQL = strSQL & "              社員コード"
-    rsA.Open strSQL, cnA, adOpenStatic, adLockReadOnly
+    strSQL = strSQL & "SELECT  SCODE"
+    strSQL = strSQL & "        ,SNAME"
+    strSQL = strSQL & "        ,CLASS"
+    strSQL = strSQL & "        ,PAY1"
+    strSQL = strSQL & "        ,PAY2"
+    strSQL = strSQL & "        ,OPT1"
+    strSQL = strSQL & "        ,OPT2"
+    strSQL = strSQL & "        ,BMN2"
+    strSQL = strSQL & "        ,BMN3"
+    strSQL = strSQL & "        ,BMNNM"
+    strSQL = strSQL & "        ,SKBN"
+    strSQL = strSQL & "        ,YKBN"
+    strSQL = strSQL & "    FROM KYUMTA"
+    strSQL = strSQL & "         WHERE KBN = '" & strKBN & "'"
+    strSQL = strSQL & "          And BMN2 = '04'"
+    strSQL = strSQL & "          And (SKBN ='A' Or SKBN ='B')"
+    strSQL = strSQL & "          And YKBN <> 'Y'"
+'    strSQL = strSQL & "    ORDER BY CLASS DESC"
+'    strSQL = strSQL & "              ,SCODE"
+    strSQL = strSQL & "    ORDER BY BMN3"
+    strSQL = strSQL & "             ,CLASS DESC"
+    strSQL = strSQL & "             ,SCODE"
+    Cmd.CommandText = strSQL
+    Set rsA = Cmd.Execute
     If rsA.EOF = False Then rsA.MoveFirst
     lngR = lngR + 1
     Do Until rsA.EOF
         Call 明細書込みF
     Loop
     rsA.Close
-    
-'    strSQL = SQL1 & strKBN & SQL2 & "04" & SQL3 & "B" & SQL5
-'    strSQL = ""
-'    strSQL = strSQL & "SELECT  社員コード,"
-'    strSQL = strSQL & "        社員名,"
-'    strSQL = strSQL & "        等級,"
-'    strSQL = strSQL & "        基本給１,"
-'    strSQL = strSQL & "        基本給２,"
-'    strSQL = strSQL & "        管理職手当,"
-'    strSQL = strSQL & "        家族手当,"
-'    strSQL = strSQL & "        部門2,"
-'    strSQL = strSQL & "        部門3,"
-'    strSQL = strSQL & "        社員種類,"
-'    strSQL = strSQL & "        新入社員"
-'    strSQL = strSQL & "     FROM グループ社員マスター"
-'    strSQL = strSQL & "          WHERE 事業所区分 = '" & strKBN & "'"
-'    strSQL = strSQL & "          And 部門2 = '04'"
-'    strSQL = strSQL & "          And 社員種類 ='B'"
-'    strSQL = strSQL & "          And 新入社員 <> 'Y'"
-'    strSQL = strSQL & "     ORDER BY 等級 DESC,"
-'    strSQL = strSQL & "              社員コード"
-'    rsA.Open strSQL, cnA, adOpenStatic, adLockReadOnly
-'    If rsA.EOF = False Then
-'        rsA.MoveFirst
-'        lngR = lngR + 1
-'        Do Until rsA.EOF
-'            Call 明細書込みF
-'        Loop
-'        lngR = lngR + 1
-'    End If
-'    lngR = lngR + 1
-    
+        
     lngR = lngR + 1
-    Cells(lngR, 3) = "◎管理部門 社員分合計"
+    Cells(lngR, 3) = "◎管理部門 合計"
     Cells(lngR, 5) = lngKIN(0)
     Cells(lngR, 6) = lngKIN(1)
     Cells(lngR, 13) = lngKIN(2)
@@ -411,26 +375,27 @@ Dim lngP      As Long    '位置記憶
     lngP = Range("AD1")
     dblR = Sheets("Main").Cells(11, lngP + 3)
     'ﾃﾞｰﾀ読込み
-    strSQL = SQL1 & strKBN & SQL2 & "04" & SQL6
     strSQL = ""
-    strSQL = strSQL & "SELECT  社員コード,"
-    strSQL = strSQL & "        社員名,"
-    strSQL = strSQL & "        等級,"
-    strSQL = strSQL & "        基本給１,"
-    strSQL = strSQL & "        基本給２,"
-    strSQL = strSQL & "        管理職手当,"
-    strSQL = strSQL & "        家族手当,"
-    strSQL = strSQL & "        部門2,"
-    strSQL = strSQL & "        部門3,"
-    strSQL = strSQL & "        部門名,"
-    strSQL = strSQL & "        社員種類,"
-    strSQL = strSQL & "        新入社員"
-    strSQL = strSQL & "     FROM グループ社員マスター"
-    strSQL = strSQL & "          WHERE 事業所区分 = '" & strKBN & "'"
-    strSQL = strSQL & "          And 部門2 = '04'"
-    strSQL = strSQL & "          And 新入社員 = 'Y'"
-    strSQL = strSQL & "     ORDER BY 社員コード"
-    rsA.Open strSQL, cnA, adOpenStatic, adLockReadOnly
+    strSQL = strSQL & "SELECT  SCODE"
+    strSQL = strSQL & "        ,SNAME"
+    strSQL = strSQL & "        ,CLASS"
+    strSQL = strSQL & "        ,PAY1"
+    strSQL = strSQL & "        ,PAY2"
+    strSQL = strSQL & "        ,OPT1"
+    strSQL = strSQL & "        ,OPT2"
+    strSQL = strSQL & "        ,BMN2"
+    strSQL = strSQL & "        ,BMN3"
+    strSQL = strSQL & "        ,BMNNM"
+    strSQL = strSQL & "        ,SKBN"
+    strSQL = strSQL & "        ,YKBN"
+    strSQL = strSQL & "    FROM KYUMTA"
+    strSQL = strSQL & "         WHERE KBN = '" & strKBN & "'"
+    strSQL = strSQL & "           And BMN2 = '04'"
+    strSQL = strSQL & "           And (SKBN ='A' Or SKBN ='B')"
+    strSQL = strSQL & "           And YKBN = 'Y'"
+    strSQL = strSQL & "    ORDER BY SCODE"
+    Cmd.CommandText = strSQL
+    Set rsA = Cmd.Execute
     If rsA.EOF = False Then
     rsA.MoveFirst
     'ﾀｲﾄﾙ
@@ -441,7 +406,7 @@ Dim lngP      As Long    '位置記憶
         Call 明細書込みF
     Loop
     lngR = lngR + 1
-    Cells(lngR, 3) = "◎管理部門 新入社員分合計"
+    Cells(lngR, 3) = "◎新入社員 合計"
     Cells(lngR, 5) = lngKIN(0)
     Cells(lngR, 6) = lngKIN(1)
     Cells(lngR, 13) = lngKIN(2)
@@ -460,10 +425,28 @@ Dim lngP      As Long    '位置記憶
     lngP = Range("AD1")
     dblR = Sheets("Main").Cells(12, lngP + 3)
     'ﾃﾞｰﾀ読込み
-    strSQL = SQL1 & strKBN & SQL2 & "04" & SQL3 & "P" & SQL5
-    
-    
-    rsA.Open strSQL, cnA, adOpenStatic, adLockReadOnly
+    strSQL = ""
+    strSQL = strSQL & "SELECT  SCODE"
+    strSQL = strSQL & "        ,SNAME"
+    strSQL = strSQL & "        ,CLASS"
+    strSQL = strSQL & "        ,PAY1"
+    strSQL = strSQL & "        ,PAY2"
+    strSQL = strSQL & "        ,OPT1"
+    strSQL = strSQL & "        ,OPT2"
+    strSQL = strSQL & "        ,BMN2"
+    strSQL = strSQL & "        ,BMN3"
+    strSQL = strSQL & "        ,BMNNM"
+    strSQL = strSQL & "        ,SKBN"
+    strSQL = strSQL & "        ,YKBN"
+    strSQL = strSQL & "    FROM KYUMTA"
+    strSQL = strSQL & "         WHERE KBN = '" & strKBN & "'"
+    strSQL = strSQL & "           And BMN2 = '04'"
+    strSQL = strSQL & "           And SKBN = 'P'"
+    strSQL = strSQL & "           And YKBN <> 'Y'"
+    strSQL = strSQL & "    ORDER BY CLASS DESC"
+    strSQL = strSQL & "             ,SCODE"
+    Cmd.CommandText = strSQL
+    Set rsA = Cmd.Execute
     If rsA.EOF = False Then
     rsA.MoveFirst
     'ﾀｲﾄﾙ
@@ -474,7 +457,7 @@ Dim lngP      As Long    '位置記憶
         Call 明細書込みF
     Loop
     lngR = lngR + 1
-    Cells(lngR, 3) = "◎管理部門 パート社員分合計"
+    Cells(lngR, 3) = "◎パート社員 合計"
     Cells(lngR, 5) = lngKIN(0)
     Cells(lngR, 6) = lngKIN(1)
     Range(Cells(lngR, 1), Cells(lngR, 21)).Select
@@ -492,8 +475,28 @@ Dim lngP      As Long    '位置記憶
     lngP = Range("AD1")
     dblR = Sheets("Main").Cells(13, lngP + 3)
     'ﾃﾞｰﾀ読込み
-    strSQL = SQL1 & strKBN & SQL2 & "04" & SQL3 & "Z" & SQL5
-    rsA.Open strSQL, cnA, adOpenStatic, adLockReadOnly
+    strSQL = ""
+    strSQL = strSQL & "SELECT  SCODE"
+    strSQL = strSQL & "        ,SNAME"
+    strSQL = strSQL & "        ,CLASS"
+    strSQL = strSQL & "        ,PAY1"
+    strSQL = strSQL & "        ,PAY2"
+    strSQL = strSQL & "        ,OPT1"
+    strSQL = strSQL & "        ,OPT2"
+    strSQL = strSQL & "        ,BMN2"
+    strSQL = strSQL & "        ,BMN3"
+    strSQL = strSQL & "        ,BMNNM"
+    strSQL = strSQL & "        ,SKBN"
+    strSQL = strSQL & "        ,YKBN"
+    strSQL = strSQL & "    FROM KYUMTA"
+    strSQL = strSQL & "         WHERE KBN = '" & strKBN & "'"
+    strSQL = strSQL & "           And BMN2 = '04'"
+    strSQL = strSQL & "           And SKBN = 'Z'"
+    strSQL = strSQL & "           And YKBN <> 'Y'"
+    strSQL = strSQL & "    ORDER BY CLASS DESC"
+    strSQL = strSQL & "             ,SCODE"
+    Cmd.CommandText = strSQL
+    Set rsA = Cmd.Execute
     If rsA.EOF = False Then
     rsA.MoveFirst
     'ﾀｲﾄﾙ
@@ -504,7 +507,7 @@ Dim lngP      As Long    '位置記憶
         Call 明細書込みF
     Loop
     lngR = lngR + 1
-    Cells(lngR, 3) = "◎管理部門 嘱託社員分合計"
+    Cells(lngR, 3) = "◎嘱託社員 合計"
     Cells(lngR, 5) = lngKIN(0)
     Cells(lngR, 6) = lngKIN(1)
     Range(Cells(lngR, 1), Cells(lngR, 21)).Select
@@ -533,24 +536,27 @@ Dim lngP      As Long    '位置記憶
     End If
     
 Exit_DB:
-    '接続のクローズ
-    cnA.Close
 
-    'オブジェクトの破棄
-    Set rsA = Nothing
-    Set cnA = Nothing
+    If Not rsA Is Nothing Then
+        If rsA.State = adStateOpen Then rsA.Close
+        Set rsA = Nothing
+    End If
+    If Not cnA Is Nothing Then
+        If cnA.State = adStateOpen Then cnA.Close
+        Set cnA = Nothing
+    End If
 
 End Sub
 
 Sub 明細書込みF()
 
-        Cells(lngR, 2) = rsA.Fields("社員コード")
-        Cells(lngR, 3) = rsA.Fields("社員名")
-        Cells(lngR, 4) = 等級記号(rsA.Fields("等級"))
-        Cells(lngR, 5) = rsA.Fields("基本給１")
-        If IsNull(rsA.Fields("基本給２")) = False Then Cells(lngR, 5) = Cells(lngR, 5) + rsA.Fields("基本給２")
-        If IsNull(rsA.Fields("管理職手当")) = False Then Cells(lngR, 5) = Cells(lngR, 5) + rsA.Fields("管理職手当")
-        If IsNull(rsA.Fields("家族手当")) = False Then Cells(lngR, 5) = Cells(lngR, 5) + rsA.Fields("家族手当")
+        Cells(lngR, 2) = rsA.Fields("SCODE")
+        Cells(lngR, 3) = rsA.Fields("SNAME")
+        Cells(lngR, 4) = 等級記号(rsA.Fields("CLASS"))
+        Cells(lngR, 5) = rsA.Fields("PAY1")
+        If IsNull(rsA.Fields("PAY2")) = False Then Cells(lngR, 5) = Cells(lngR, 5) + rsA.Fields("PAY2")
+        If IsNull(rsA.Fields("OPT1")) = False Then Cells(lngR, 5) = Cells(lngR, 5) + rsA.Fields("OPT1")
+        If IsNull(rsA.Fields("OPT2")) = False Then Cells(lngR, 5) = Cells(lngR, 5) + rsA.Fields("OPT2")
         Cells(lngR, 6) = Application.RoundUp((Cells(lngR, 5) * dblR) / 1000, 0) * 1000
         Cells(lngR, 7) = 0
         Cells(lngR, 8) = "=(RoundUp((RC[-3]*RC[-1])/100,0))*100"
@@ -559,16 +565,16 @@ Sub 明細書込みF()
         Cells(lngR, 13) = "=IF(RC[-2]=0,RC[-7]+RC[-5],IF(RC[-2]="""","""",RoundUp((((RC[-7]+RC[-5])*RC[-4])/RC[-2])/100,0)*100))"
         Cells(lngR, 14) = "=IF(RC[-1]="""","""",RC[-1]/RC[-9])"
         Cells(lngR, 15) = "=IF(RC[1]=0,"""",(RC[-2]-RC[1])/RC[1])"
-        Cells(lngR, 22) = rsA.Fields("部門2")
-        Cells(lngR, 23) = rsA.Fields("部門3")
-        Cells(lngR, 24) = rsA.Fields("部門名")
-        If rsA.Fields("社員種類") = "B" Then
+        Cells(lngR, 22) = rsA.Fields("BMN2")
+        Cells(lngR, 23) = rsA.Fields("BMN3")
+        Cells(lngR, 24) = rsA.Fields("BMNNM")
+        If rsA.Fields("SKBN") = "B" Then '社員区分(SKBN)がBの社員はAに置き換える
             Cells(lngR, 25) = "A"
-        ElseIf rsA.Fields("新入社員") = "Y" Then
+        ElseIf rsA.Fields("SKBN") = "Y" Then '新入社員処理
             Cells(lngR, 1) = "☆"
             Cells(lngR, 25) = "Y"
         Else
-            Cells(lngR, 25) = rsA.Fields("社員種類")
+            Cells(lngR, 25) = rsA.Fields("SKBN")
         End If
         lngKIN(0) = lngKIN(0) + Cells(lngR, 5)
         lngKIN(1) = lngKIN(1) + Cells(lngR, 6)

@@ -12,18 +12,18 @@ Private lngRKN(7) As Long    '合計金額
 Private lngR      As Long    '行ｶｳﾝﾀ
 Private dblR      As Double  '基本支給率
 
-Const SQL2 = "SELECT * FROM 賞与 WHERE (((支給年月) = '"
-Const SQL3 = "') And ((部門1) = '"
-Const SQL4 = "') And ((部門2) = '"
-Const SQL5 = "') And ((社員種類) = '"
-Const SQL6 = "') And ((部門3) = '"
-Const SQL6S1 = "') And ((部門3) > '"
-Const SQL6S2 = "') And ((部門3) < '"
-Const SQL8 = "')) ORDER BY 部門3, 等級 DESC, 社員コード"  '営業部門のみ課ごとに並び替え
-Const SQL9 = "')) ORDER BY 等級 DESC, 社員コード"
-Const SQLZ1 = "SELECT 賞与支給額, 賃金 FROM 賞与 WHERE (((支給年月) = '"
-Const SQLZ2 = "') And ((社員コード) = '"
-Const SQLZ3 = "'))"
+'Const SQL2 = "SELECT * FROM 賞与 WHERE (((支給年月) = '"
+'Const SQL3 = "') And ((部門1) = '"
+'Const SQL4 = "') And ((部門2) = '"
+'Const SQL5 = "') And ((社員種類) = '"
+'Const SQL6 = "') And ((部門3) = '"
+'Const SQL6S1 = "') And ((部門3) > '"
+'Const SQL6S2 = "') And ((部門3) < '"
+'Const SQL8 = "')) ORDER BY 部門3, 等級 DESC, 社員コード"  '営業部門のみ課ごとに並び替え
+'Const SQL9 = "')) ORDER BY 等級 DESC, 社員コード"
+'Const SQLZ1 = "SELECT 賞与支給額, 賃金 FROM 賞与 WHERE (((支給年月) = '"
+'Const SQLZ2 = "') And ((社員コード) = '"
+'Const SQLZ3 = "'))"
 
 Sub Get_Data()
 '=================
@@ -141,28 +141,34 @@ Dim lngM    As Long
     
     dblR = Sheets("Main").Cells(7, lngP + 3)
     'ﾃﾞｰﾀ読込
-    If strSB = "S" Then '支店リスト
-        strSQL = SQL2 & strDAT & SQL3 & strKBN & SQL4 & "01" & SQL8
-    ElseIf strSB = "B" Then '部門ごとのリスト
+    strSQL = ""
+    strSQL = strSQL & "SELECT *"
+    strSQL = strSQL & "       FROM 賞与"
+    strSQL = strSQL & "            WHERE 支給年月 = '" & strDAT & "'"
+    strSQL = strSQL & "            AND      部門1 = '" & strKBN & "'"
+    strSQL = strSQL & "            AND      部門2 = '01'"
+    If strSB = "B" Then '部門ごとのリスト
         If strBMN = "OS" Then
-            strSQL = SQL2 & strDAT & SQL3 & strKBN & SQL4 & "01" & SQL6S1 & "10" & SQL6S2 & "17" & SQL8
+           strSQL = strSQL & "  And 部門3 > '10'"
+           strSQL = strSQL & "  And 部門3 < '17'"
         ElseIf strBMN = "TK" Then
-            strSQL = SQL2 & strDAT & SQL3 & strKBN & SQL4 & "01" & SQL6S1 & "24" & SQL6S2 & "27" & SQL8
+            strSQL = strSQL & "  And 部門3 > '24'"
+            strSQL = strSQL & "  And 部門3 < '27'"
         ElseIf strBMN = "FU" Then
-            strSQL = SQL2 & strDAT & SQL3 & strKBN & SQL4 & "01" & SQL6 & "19" & SQL8
+            strSQL = strSQL & "  And 部門3 = '19'"
         ElseIf strBMN = "NG" Then
-            strSQL = SQL2 & strDAT & SQL3 & strKBN & SQL4 & "01" & SQL6 & "22" & SQL8
+            strSQL = strSQL & "  And 部門3 = '22'"
         ElseIf strBMN = "SG" Then
-            strSQL = SQL2 & strDAT & SQL3 & strKBN & SQL4 & "01" & SQL6 & "27" & SQL8
+            strSQL = strSQL & "  And 部門3 = '27'"
         ElseIf strBMN = "SD" Then
-            strSQL = SQL2 & strDAT & SQL3 & strKBN & SQL4 & "01" & SQL6 & "28" & SQL8
+            strSQL = strSQL & "  And 部門3 = '28'"
         ElseIf strBMN = "AK" Then
-            strSQL = SQL2 & strDAT & SQL3 & strKBN & SQL4 & "01" & SQL6 & "29" & SQL8
+            strSQL = strSQL & "  And 部門3 = '29'"
         Else
             GoTo Exit_DB
         End If
     End If
-    
+    strSQL = strSQL & "          ORDER BY 部門3, 等級 DESC, 社員コード"
     rsA.Open strSQL, cnA, adOpenStatic, adLockReadOnly
     If rsA.EOF = False Then
         rsA.MoveFirst
@@ -189,14 +195,20 @@ Dim lngM    As Long
     
     End If
     
-     'ｼｽﾃﾑ部門処理 ===============================================
+    'ｼｽﾃﾑ部門処理 ===============================================
     Erase lngKIN
     dblR = Sheets("Main").Cells(9, lngP + 3)
-    If strSB = "S" Then
-        strSQL = SQL2 & strDAT & SQL3 & strKBN & SQL4 & "03" & SQL9
-     ElseIf strSB = "B" Then
-        strSQL = SQL2 & strDAT & SQL3 & strKBN & SQL4 & "03" & SQL6 & strBMN & SQL9
+    'ﾃﾞｰﾀ読込み
+    strSQL = ""
+    strSQL = strSQL & "SELECT *"
+    strSQL = strSQL & "       FROM 賞与"
+    strSQL = strSQL & "            WHERE 支給年月 = '" & strDAT & "'"
+    strSQL = strSQL & "            AND      部門1 = '" & strKBN & "'"
+    strSQL = strSQL & "            AND      部門2 = '03'"
+    If strSB = "B" Then
+        strSQL = strSQL & "        And 部門3 = '" & strBMN & " '"
     End If
+    strSQL = strSQL & "       ORDER BY 等級 DESC, 社員コード"
     rsA.Open strSQL, cnA, adOpenStatic, adLockReadOnly
     If rsA.EOF = False Then
         rsA.MoveFirst
@@ -250,24 +262,41 @@ Dim lngM    As Long
     lngP = Range("AD1")
     dblR = Sheets("Main").Cells(10, lngP + 3)
     'ﾃﾞｰﾀ読込み
-    If strSB = "S" Then
-        strSQL = SQL2 & strDAT & SQL3 & strKBN & SQL4 & "04" & SQL5 & "A" & SQL9
-    ElseIf strSB = "B" Then
+    strSQL = ""
+    strSQL = strSQL & "SELECT *"
+    strSQL = strSQL & "       FROM 賞与"
+    strSQL = strSQL & "            WHERE 支給年月 = '" & strDAT & "'"
+    strSQL = strSQL & "            AND   部門1    = '" & strKBN & "'"
+    strSQL = strSQL & "            AND   部門2    = '04'"
+    strSQL = strSQL & "            AND 　社員種類 = 'A'"
+    If strSB = "B" Then
         If strBMN = "OS" Then
-            strSQL = SQL2 & strDAT & SQL3 & strKBN & SQL4 & "04" & SQL5 & "A" & SQL6S1 & "16" & SQL6S2 & "19" & SQL8
+            strSQL = strSQL & "  And 部門3 > '16'"
+            strSQL = strSQL & "  And 部門3 < '19'"
         ElseIf strBMN = "FU" Then
-            strSQL = SQL2 & strDAT & SQL3 & strKBN & SQL4 & "04" & SQL5 & "A" & SQL6S1 & "18" & SQL6S2 & "22" & SQL8
+            strSQL = strSQL & "  And 部門3 > '18'"
+            strSQL = strSQL & "  And 部門3 < '22'"
          ElseIf strBMN = "NG" Then
-            strSQL = SQL2 & strDAT & SQL3 & strKBN & SQL4 & "04" & SQL5 & "A" & SQL6S1 & "22" & SQL6S2 & "25" & SQL8
+            strSQL = strSQL & "  And 部門3 > '22'"
+            strSQL = strSQL & "  And 部門3 < '25'"
         ElseIf strBMN = "TK" Then
-            strSQL = SQL2 & strDAT & SQL3 & strKBN & SQL4 & "04" & SQL5 & "A" & SQL6S1 & "29" & SQL6S2 & "32" & SQL8
+            strSQL = strSQL & "  And 部門3 > '29'"
+            strSQL = strSQL & "  And 部門3 < '32'"
         ElseIf strBMN = "SG" Then
-            strSQL = SQL2 & strDAT & SQL3 & strKBN & SQL4 & "04" & SQL5 & "A" & SQL6S1 & "31" & SQL6S2 & "34" & SQL8
+            strSQL = strSQL & "  And 部門3 > '31'"
+            strSQL = strSQL & "  And 部門3 < '34'"
         ElseIf strBMN = "SD" Then
-            strSQL = SQL2 & strDAT & SQL3 & strKBN & SQL4 & "04" & SQL5 & "A" & SQL6S1 & "33" & SQL6S2 & "36" & SQL8
+            strSQL = strSQL & "  And 部門3 > '33'"
+            strSQL = strSQL & "  And 部門3 < '36'"
         ElseIf strBMN = "AK" Then
-            strSQL = SQL2 & strDAT & SQL3 & strKBN & SQL4 & "04" & SQL5 & "A" & SQL6S1 & "35" & SQL6S2 & "38" & SQL8
+            strSQL = strSQL & "  And 部門3 > '35'"
+            strSQL = strSQL & "  And 部門3 < '38'"
         End If
+    End If
+    If strSB = "S" Then
+        strSQL = strSQL & "  ORDER BY 等級 DESC, 社員コード"
+    Else
+        strSQL = strSQL & "  ORDER BY 部門3, 等級 DESC, 社員コード"
     End If
     rsA.Open strSQL, cnA, adOpenStatic, adLockReadOnly
     If rsA.EOF = False Then
@@ -296,24 +325,41 @@ Dim lngM    As Long
     lngP = Range("AD1")
     dblR = Sheets("Main").Cells(11, lngP + 3)
     'ﾃﾞｰﾀ読込み
-    If strSB = "S" Then
-        strSQL = SQL2 & strDAT & SQL3 & strKBN & SQL4 & "04" & SQL5 & "Y" & SQL9
-    ElseIf strSB = "B" Then
+    strSQL = ""
+    strSQL = strSQL & "SELECT *"
+    strSQL = strSQL & "       FROM 賞与"
+    strSQL = strSQL & "            WHERE 支給年月 = '" & strDAT & "'"
+    strSQL = strSQL & "            AND   部門1    = '" & strKBN & "'"
+    strSQL = strSQL & "            AND   部門2    = '04'"
+    strSQL = strSQL & "            AND 　社員種類 = 'Y'"
+    If strSB = "B" Then
         If strBMN = "OS" Then
-            strSQL = SQL2 & strDAT & SQL3 & strKBN & SQL4 & "04" & SQL5 & "Y" & SQL6S1 & "16" & SQL6S2 & "19" & SQL8
+            strSQL = strSQL & "  And 部門3 > '16'"
+            strSQL = strSQL & "  And 部門3 < '19'"
         ElseIf strBMN = "FU" Then
-            strSQL = SQL2 & strDAT & SQL3 & strKBN & SQL4 & "04" & SQL5 & "Y" & SQL6S1 & "18" & SQL6S2 & "22" & SQL8
-        ElseIf strBMN = "NG" Then
-            strSQL = SQL2 & strDAT & SQL3 & strKBN & SQL4 & "04" & SQL5 & "Y" & SQL6S1 & "22" & SQL6S2 & "25" & SQL8
+            strSQL = strSQL & "  And 部門3 > '18'"
+            strSQL = strSQL & "  And 部門3 < '22'"
+         ElseIf strBMN = "NG" Then
+            strSQL = strSQL & "  And 部門3 > '22'"
+            strSQL = strSQL & "  And 部門3 < '25'"
         ElseIf strBMN = "TK" Then
-            strSQL = SQL2 & strDAT & SQL3 & strKBN & SQL4 & "04" & SQL5 & "Y" & SQL6S1 & "29" & SQL6S2 & "32" & SQL8
+            strSQL = strSQL & "  And 部門3 > '29'"
+            strSQL = strSQL & "  And 部門3 < '32'"
         ElseIf strBMN = "SG" Then
-            strSQL = SQL2 & strDAT & SQL3 & strKBN & SQL4 & "04" & SQL5 & "Y" & SQL6S1 & "31" & SQL6S2 & "34" & SQL8
+            strSQL = strSQL & "  And 部門3 > '31'"
+            strSQL = strSQL & "  And 部門3 < '34'"
         ElseIf strBMN = "SD" Then
-            strSQL = SQL2 & strDAT & SQL3 & strKBN & SQL4 & "04" & SQL5 & "Y" & SQL6S1 & "33" & SQL6S2 & "36" & SQL8
+            strSQL = strSQL & "  And 部門3 > '33'"
+            strSQL = strSQL & "  And 部門3 < '36'"
         ElseIf strBMN = "AK" Then
-            strSQL = SQL2 & strDAT & SQL3 & strKBN & SQL4 & "04" & SQL5 & "Y" & SQL6S1 & "35" & SQL6S2 & "38" & SQL8
+            strSQL = strSQL & "  And 部門3 > '35'"
+            strSQL = strSQL & "  And 部門3 < '38'"
         End If
+    End If
+    If strSB = "S" Then
+        strSQL = strSQL & "  ORDER BY 等級 DESC, 社員コード"
+    Else
+        strSQL = strSQL & "  ORDER BY 部門3, 等級 DESC, 社員コード"
     End If
     rsA.Open strSQL, cnA, adOpenStatic, adLockReadOnly
     If rsA.EOF = False Then
@@ -338,24 +384,41 @@ Dim lngM    As Long
     lngP = Range("AD1")
     dblR = Sheets("Main").Cells(12, lngP + 3)
     'ﾃﾞｰﾀ読込み
-    If strSB = "S" Then
-        strSQL = SQL2 & strDAT & SQL3 & strKBN & SQL4 & "04" & SQL5 & "P" & SQL9
-    ElseIf strSB = "B" Then
+    strSQL = ""
+    strSQL = strSQL & "SELECT *"
+    strSQL = strSQL & "       FROM 賞与"
+    strSQL = strSQL & "            WHERE 支給年月 = '" & strDAT & "'"
+    strSQL = strSQL & "            AND   部門1    = '" & strKBN & "'"
+    strSQL = strSQL & "            AND   部門2    = '04'"
+    strSQL = strSQL & "            AND 　社員種類 = 'P'"
+    If strSB = "B" Then
         If strBMN = "OS" Then
-            strSQL = SQL2 & strDAT & SQL3 & strKBN & SQL4 & "04" & SQL5 & "P" & SQL6S1 & "16" & SQL6S2 & "19" & SQL8
+            strSQL = strSQL & "  And 部門3 > '16'"
+            strSQL = strSQL & "  And 部門3 < '19'"
         ElseIf strBMN = "FU" Then
-            strSQL = SQL2 & strDAT & SQL3 & strKBN & SQL4 & "04" & SQL5 & "P" & SQL6S1 & "18" & SQL6S2 & "22" & SQL8
-        ElseIf strBMN = "NG" Then
-            strSQL = SQL2 & strDAT & SQL3 & strKBN & SQL4 & "04" & SQL5 & "P" & SQL6S1 & "22" & SQL6S2 & "25" & SQL8
+            strSQL = strSQL & "  And 部門3 > '18'"
+            strSQL = strSQL & "  And 部門3 < '22'"
+         ElseIf strBMN = "NG" Then
+            strSQL = strSQL & "  And 部門3 > '22'"
+            strSQL = strSQL & "  And 部門3 < '25'"
         ElseIf strBMN = "TK" Then
-            strSQL = SQL2 & strDAT & SQL3 & strKBN & SQL4 & "04" & SQL5 & "P" & SQL6S1 & "29" & SQL6S2 & "32" & SQL8
+            strSQL = strSQL & "  And 部門3 > '29'"
+            strSQL = strSQL & "  And 部門3 < '32'"
         ElseIf strBMN = "SG" Then
-            strSQL = SQL2 & strDAT & SQL3 & strKBN & SQL4 & "04" & SQL5 & "P" & SQL6S1 & "31" & SQL6S2 & "34" & SQL8
+            strSQL = strSQL & "  And 部門3 > '31'"
+            strSQL = strSQL & "  And 部門3 < '34'"
         ElseIf strBMN = "SD" Then
-            strSQL = SQL2 & strDAT & SQL3 & strKBN & SQL4 & "04" & SQL5 & "P" & SQL6S1 & "33" & SQL6S2 & "36" & SQL8
+            strSQL = strSQL & "  And 部門3 > '33'"
+            strSQL = strSQL & "  And 部門3 < '36'"
         ElseIf strBMN = "AK" Then
-            strSQL = SQL2 & strDAT & SQL3 & strKBN & SQL4 & "04" & SQL5 & "P" & SQL6S1 & "35" & SQL6S2 & "38" & SQL8
+            strSQL = strSQL & "  And 部門3 > '35'"
+            strSQL = strSQL & "  And 部門3 < '38'"
         End If
+    End If
+    If strSB = "S" Then
+        strSQL = strSQL & "  ORDER BY 等級 DESC, 社員コード"
+    Else
+        strSQL = strSQL & "  ORDER BY 部門3, 等級 DESC, 社員コード"
     End If
     rsA.Open strSQL, cnA, adOpenStatic, adLockReadOnly
     If rsA.EOF = False Then
@@ -383,24 +446,41 @@ Dim lngM    As Long
     lngP = Range("AD1")
     dblR = Sheets("Main").Cells(13, lngP + 3)
     'ﾃﾞｰﾀ読込み
-    If strSB = "S" Then
-        strSQL = SQL2 & strDAT & SQL3 & strKBN & SQL4 & "04" & SQL5 & "Z" & SQL9
-    ElseIf strSB = "B" Then
+    strSQL = ""
+    strSQL = strSQL & "SELECT *"
+    strSQL = strSQL & "       FROM 賞与"
+    strSQL = strSQL & "            WHERE 支給年月 = '" & strDAT & "'"
+    strSQL = strSQL & "            AND   部門1    = '" & strKBN & "'"
+    strSQL = strSQL & "            AND   部門2    = '04'"
+    strSQL = strSQL & "            AND 　社員種類 = 'Z'"
+    If strSB = "B" Then
         If strBMN = "OS" Then
-            strSQL = SQL2 & strDAT & SQL3 & strKBN & SQL4 & "04" & SQL5 & "Z" & SQL6S1 & "16" & SQL6S2 & "19" & SQL8
+            strSQL = strSQL & "  And 部門3 > '16'"
+            strSQL = strSQL & "  And 部門3 < '19'"
         ElseIf strBMN = "FU" Then
-            strSQL = SQL2 & strDAT & SQL3 & strKBN & SQL4 & "04" & SQL5 & "Z" & SQL6S1 & "18" & SQL6S2 & "22" & SQL8
-        ElseIf strBMN = "NG" Then
-            strSQL = SQL2 & strDAT & SQL3 & strKBN & SQL4 & "04" & SQL5 & "Z" & SQL6S1 & "22" & SQL6S2 & "25" & SQL8
+            strSQL = strSQL & "  And 部門3 > '18'"
+            strSQL = strSQL & "  And 部門3 < '22'"
+         ElseIf strBMN = "NG" Then
+            strSQL = strSQL & "  And 部門3 > '22'"
+            strSQL = strSQL & "  And 部門3 < '25'"
         ElseIf strBMN = "TK" Then
-            strSQL = SQL2 & strDAT & SQL3 & strKBN & SQL4 & "04" & SQL5 & "Z" & SQL6S1 & "29" & SQL6S2 & "32" & SQL8
+            strSQL = strSQL & "  And 部門3 > '29'"
+            strSQL = strSQL & "  And 部門3 < '32'"
         ElseIf strBMN = "SG" Then
-            strSQL = SQL2 & strDAT & SQL3 & strKBN & SQL4 & "04" & SQL5 & "Z" & SQL6S1 & "31" & SQL6S2 & "34" & SQL8
+            strSQL = strSQL & "  And 部門3 > '31'"
+            strSQL = strSQL & "  And 部門3 < '34'"
         ElseIf strBMN = "SD" Then
-            strSQL = SQL2 & strDAT & SQL3 & strKBN & SQL4 & "04" & SQL5 & "Z" & SQL6S1 & "33" & SQL6S2 & "36" & SQL8
+            strSQL = strSQL & "  And 部門3 > '33'"
+            strSQL = strSQL & "  And 部門3 < '36'"
         ElseIf strBMN = "AK" Then
-            strSQL = SQL2 & strDAT & SQL3 & strKBN & SQL4 & "04" & SQL5 & "Z" & SQL6S1 & "35" & SQL6S2 & "38" & SQL8
+            strSQL = strSQL & "  And 部門3 > '35'"
+            strSQL = strSQL & "  And 部門3 < '38'"
         End If
+    End If
+    If strSB = "S" Then
+        strSQL = strSQL & "  ORDER BY 等級 DESC, 社員コード"
+    Else
+        strSQL = strSQL & "  ORDER BY 部門3, 等級 DESC, 社員コード"
     End If
     rsA.Open strSQL, cnA, adOpenStatic, adLockReadOnly
     If rsA.EOF = False Then
@@ -458,12 +538,15 @@ Dim lngM    As Long
     Range("A1").Select
     
 Exit_DB:
-    '接続のクローズ
-    cnA.Close
 
-    'オブジェクトの破棄
-    Set rsA = Nothing
-    Set cnA = Nothing
+    If Not rsA Is Nothing Then
+        If rsA.State = adStateOpen Then rsA.Close
+        Set rsA = Nothing
+    End If
+    If Not cnA Is Nothing Then
+        If cnA.State = adStateOpen Then cnA.Close
+        Set cnA = Nothing
+    End If
 
 End Sub
 
@@ -508,7 +591,12 @@ Dim rsZ As New ADODB.Recordset
         lngKIN(2) = lngKIN(2) + Cells(lngR, 8)
         If Cells(lngR, 13) <> "" Then lngKIN(3) = lngKIN(3) + Cells(lngR, 13)
         '前回ﾃﾞｰﾀ取得
-        strSQL = SQLZ1 & strDAL & SQLZ2 & rsA.Fields("社員コード") & SQLZ3
+        strSQL = ""
+        strSQL = strSQL & "SELECT 賞与支給額"
+        strSQL = strSQL & "      ,賃金"
+        strSQL = strSQL & "       FROM 賞与"
+        strSQL = strSQL & "            WHERE 支給年月 = '" & strDAL & "'"
+        strSQL = strSQL & "            AND   社員コード = '" & rsA.Fields("社員コード") & "'"
         rsZ.Open strSQL, cnA, adOpenStatic, adLockReadOnly
         If rsZ.EOF = False Then
             Cells(lngR, 15) = "=IF(RC[1]=0,0,RC[-2]/RC[1])"
@@ -520,7 +608,12 @@ Dim rsZ As New ADODB.Recordset
         End If
         rsZ.Close
         '前年ﾃﾞｰﾀ取得
-        strSQL = SQLZ1 & strDAZ & SQLZ2 & rsA.Fields("社員コード") & SQLZ3
+        strSQL = ""
+        strSQL = strSQL & "SELECT 賞与支給額"
+        strSQL = strSQL & "      ,賃金"
+        strSQL = strSQL & "       FROM 賞与"
+        strSQL = strSQL & "            WHERE 支給年月 = '" & strDAZ & "'"
+        strSQL = strSQL & "            AND   社員コード = '" & rsA.Fields("社員コード") & "'"
         rsZ.Open strSQL, cnA, adOpenStatic, adLockReadOnly
         If rsZ.EOF = False Then
             Cells(lngR, 19) = rsZ.Fields("賞与支給額")
@@ -569,9 +662,9 @@ Sub Up_Data()
 '=================
 'データ登録ボタン
 '=================
-Const SQLD1 = "DELETE FROM 賞与 WHERE (((支給年月)='"
-Const SQLD2 = "') AND ((部門1)='"
-Const SQLD3 = "'))"
+'Const SQLD1 = "DELETE FROM 賞与 WHERE (((支給年月)='"
+'Const SQLD2 = "') AND ((部門1)='"
+'Const SQLD3 = "'))"
 Const SQL1 = "SELECT * FROM 賞与"
 
 Dim cnA As New ADODB.Connection
@@ -605,11 +698,19 @@ Dim lngC     As Long    '列ｶｳﾝﾀ
     'データ削除処理
     strDAT = Sheets("Main").Range("E2") & Format(Sheets("Main").Range("G2"), "00")
     strKBN = Range("AE1")
-    strSQL = SQLD1 & strDAT & SQLD2 & strKBN & SQLD3
+'    strSQL = SQLD1 & strDAT & SQLD2 & strKBN & SQLD3
+    strSQL = ""
+    strSQL = strSQL & "DELETE"
+    strSQL = strSQL & "       FROM 賞与"
+    strSQL = strSQL & "            WHERE 支給年月 = '" & strDAT & "'"
+    strSQL = strSQL & "            AND   部門1    = '" & strKBN & "'"
     rsA.Open strSQL, cnA, adOpenStatic, adLockReadOnly
     
     'データ登録処理
-    rsA.Open SQL1, cnA, adOpenStatic, adLockPessimistic
+    strSQL = ""
+    strSQL = strSQL & "SELECT *"
+    strSQL = strSQL & "       FROM 賞与"
+    rsA.Open strSQL, cnA, adOpenStatic, adLockPessimistic
     For lngR = 8 To 100
         If Cells(lngR, 2) <> "" Then
             rsA.AddNew
@@ -640,16 +741,17 @@ Dim lngC     As Long    '列ｶｳﾝﾀ
     Next lngR
     
     MsgBox "登録しました(＠_＠;)", vbExclamation, "登録"
-    
-    '接続のクローズ
-    rsA.Close
-    cnA.Close
-    
+        
 Exit_DB:
 
-    'オブジェクトの破棄
-    Set rsA = Nothing
-    Set cnA = Nothing
+    If Not rsA Is Nothing Then
+        If rsA.State = adStateOpen Then rsA.Close
+        Set rsA = Nothing
+    End If
+    If Not cnA Is Nothing Then
+        If cnA.State = adStateOpen Then cnA.Close
+        Set cnA = Nothing
+    End If
 
 End Sub
 
@@ -665,13 +767,11 @@ Sub Proc_Prn(boolPDF As Boolean)
     
     If boolPDF = True Then
         If strCPN = "HB14" Then
-'            strJP = "Adobe PDF"
             strJP = "Adobe PDF on Ne07:"
         End If
     Else
         If strCPN = "HB14" Then
-'            strJP = "iR-ADV C5550 (Color)"
-            strJP = "iR-ADV C5550 on Ne03:"
+            strJP = "IR-ADVC5850F on Ne02:"
         End If
     End If
     
@@ -683,9 +783,7 @@ Sub Proc_Prn(boolPDF As Boolean)
     
     lngM = MsgBox("印刷する前に必ず登録・読込する事！" & vbCrLf & "印刷しますか？", vbYesNo, "計算表印刷")
     If lngM = vbYes Then
-        
-'         Application.ActiveSheet.PrintOut ActivePrinter:=strJP
-         
+                 
         strDP = Application.ActivePrinter
         Application.ActivePrinter = strJP
         ActiveWindow.View = xlPageBreakPreview
@@ -697,7 +795,6 @@ Sub Proc_Prn(boolPDF As Boolean)
                 .Zoom = 89
         End With
         ActiveWindow.SelectedSheets.PrintOut Copies:=1, ActivePrinter:=strJP, Collate:=True
-'        ActiveWindow.SelectedSheets.PrintOut Copies:=1, ActivePrinter:=strJP, Collate:=True, Preview:=True
         ActiveSheet.DisplayPageBreaks = False
         ActiveWindow.View = xlNormalView
         Application.ActivePrinter = strDP
@@ -706,6 +803,7 @@ Sub Proc_Prn(boolPDF As Boolean)
     End If
     
 End Sub
+
 
 Sub Prn_Canon()
     Call Proc_Prn(False)
